@@ -13,6 +13,7 @@ module Dox
 
       def print_example_request
         @output.puts example_request_title
+        @output.puts example_request_attributes
         @output.puts example_request_headers
         return unless example.request_body.present?
 
@@ -35,6 +36,15 @@ module Dox
 
 + Request #{example.request_identifier}
 **#{example.request_method.upcase}**&nbsp;&nbsp;`#{CGI.unescape(example.request_fullpath)}`
+        HEREDOC
+      end
+
+      def example_request_attributes
+        <<-HEREDOC
+
+    + Attributes
+
+#{indent_lines(8, print_attributes(example.action.attrs))}
         HEREDOC
       end
 
@@ -91,6 +101,33 @@ module Dox
         else
           ''
         end
+      end
+
+      def print_array(arr)
+        arr.collect do |arg|
+          arg.kind_of?(Hash) && arg[:object] ? "- (object)#{print_array(arg[:object])}" : "- #{arg}"
+        end.join("\n")
+      end
+
+      def print_description(description, attr_type)
+        if attr_type.to_s == 'array' && description.kind_of?(Array)
+           "\n" + indent_lines(4, print_array(description))
+        elsif attr_type.to_s == 'object' && description.kind_of?(Hash) && description[:object]
+          "\n" + indent_lines(4, print_array(description[:object]))
+        else
+          " - #{description}"
+        end
+      end
+
+      def print_attributes(attrs)
+        attrs.map do |attr, details|
+          value = details[:value].blank? ? '' : ": `#{CGI.escape(details[:value].to_s)}`"
+          type_and_required = [details[:type], details[:required]].compact
+          desc = "+ #{CGI.escape(attr.to_s)}#{value} (#{type_and_required.join(', ')})"
+          desc += print_description(details[:description], details[:type]) if details[:description].present?
+          desc += "\n        + Default: #{details[:default]}" if details[:default].present?
+          desc
+        end.flatten.join("\n")
       end
 
       def print_headers(headers)

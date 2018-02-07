@@ -9,6 +9,8 @@ module Dox
       def_delegator :request, :content_type, :request_content_type
       def_delegator :request, :method, :request_method
 
+      attr_accessor :action
+
       def initialize(details, request, response)
         @desc = details[:description]
         @request = request

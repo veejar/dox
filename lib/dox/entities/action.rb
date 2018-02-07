@@ -1,7 +1,7 @@
 module Dox
   module Entities
     class Action
-      attr_reader :name, :desc, :verb, :path, :uri_params
+      attr_reader :name, :desc, :verb, :path, :uri_params, :attrs
       attr_accessor :examples
 
       def initialize(name, details, request)
@@ -11,6 +11,7 @@ module Dox
         @verb = details[:action_verb] || request.method
         @path = details[:action_path] || template_path
         @uri_params = details[:action_params] || template_path_params
+        @attrs = details[:action_attrs] || request_body_params
         @examples = []
 
         validate!
@@ -42,9 +43,22 @@ module Dox
         h
       end
 
+      def request_body_params
+        h = {}
+        request.request_parameters.each do |param, value|
+          param_type = guess_param_type(value)
+          h[param] = { type: param_type }
+        end
+        h
+      end
+
       def guess_param_type(param)
-        if param =~ /^\d+$/
+        if param.to_s =~ /^\d+$/
           :number
+        elsif param.kind_of?(Array)
+          :array
+        elsif param.kind_of?(Hash)
+          :object
         else
           :string
         end
