@@ -69,7 +69,7 @@ module Dox
       def parse_request_body
         body = request.body.read
         return body if body.blank?
-        JSON.parse(body)
+        request.request_parameters
       end
     end
   end
